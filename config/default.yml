@@ -1,0 +1,10 @@
+NEETzsche:
+  Enabled: true
+
+NEETzsche/NoComments:
+  Description: "Forbids comments. Magic comments, shebangs, and rubocop directives are allowed."
+  Enabled: true
+  VersionAdded: "0.1.0"
+
+Style/Documentation:
+  Enabled: false
