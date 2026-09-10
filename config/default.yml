@@ -1,6 +1,14 @@
 NEETzsche:
   Enabled: true
 
+NEETzsche/GeneratedMigrationTimestamp:
+  Description: "Requires migration filenames to carry the timestamp `bin/rails generate migration` stamped, not a round or patterned one typed by hand."
+  Enabled: true
+  VersionAdded: "0.2.0"
+  Include:
+    - "**/db/migrate/**/*.rb"
+    - "**/db/*_migrate/**/*.rb"
+
 NEETzsche/NoComments:
   Description: "Forbids comments. Magic comments, shebangs, and rubocop directives are allowed."
   Enabled: true

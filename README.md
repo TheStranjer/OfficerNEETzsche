@@ -8,6 +8,7 @@ RuboCop cops that enforce NEETzsche-isms. Every cop ships enabled: register the 
 
 | Cop | Enforces | Autocorrect |
 | --- | --- | --- |
+| `NEETzsche/GeneratedMigrationTimestamp` | Migration timestamps come from `bin/rails generate migration`, not a keyboard. | No |
 | `NEETzsche/NoComments` | No comments. The code explains itself. | Yes |
 
 ## Requirements
@@ -57,6 +58,54 @@ Autocorrect what they flag:
 ```sh
 bundle exec rubocop --autocorrect --only NEETzsche
 ```
+
+## NEETzsche/GeneratedMigrationTimestamp
+
+Flags a migration file whose 14-digit timestamp prefix looks typed rather than generated. `bin/rails generate migration` stamps the file with the current UTC second, and that second is almost never round. A person, or an LLM writing the file without running the generator, reaches for round numbers and patterns instead.
+
+```
+# bad
+db/migrate/20240101000000_create_users.rb
+db/migrate/20240101000001_create_posts.rb
+db/migrate/20240115120000_add_email_to_users.rb
+db/migrate/20240315143000_create_comments.rb
+db/migrate/20240601123456_add_index_to_comments.rb
+
+# good
+db/migrate/20260409074855_create_users.rb
+```
+
+The offense sits on the first line of the file and names the tell:
+
+- **No 14-digit timestamp.** `001_create_users.rb`, `20240101_create_users.rb`, `create_users.rb`.
+- **Not a real date or time.** `2023-02-29`, month `13`, hour `24`, minute or second `60`.
+- **In the future.** A date later than today in UTC.
+- **A round clock time.** Seconds `00` on a five-minute mark: `00:00:00`, `12:00:00`, `14:30:00`, `09:15:00`.
+- **A round hour plus a counter.** Up to nine seconds or nine minutes past any hour (`12:00:01`, `12:01:00`), or any whole minute or second past midnight (`00:00:23`, `00:37:00`). Incrementing the last digits of a copied timestamp produces these.
+- **One number repeated.** `11:11:11`, `12:12:12`.
+- **Consecutive numbers.** `01:02:03`, `10:11:12`.
+- **A placeholder time.** `12:34:56`, `01:23:45`, `10:20:30`, `11:22:33`, `15:30:45`, `23:59:59`.
+
+A time that only ends in `:00`, such as `14:17:00`, passes. The date is not judged beyond existing and having happened, so a migration generated on New Year's Day passes too.
+
+The cop runs on `db/migrate/**/*.rb` and on the `db/*_migrate/**/*.rb` directories that multiple-database setups use. About one generated timestamp in a hundred lands on a clock-time tell, so an established project may see a few legitimate migrations flagged. Never rename a migration that has run anywhere, since its version is recorded in `schema_migrations`. Exclude the file instead:
+
+```yaml
+NEETzsche/GeneratedMigrationTimestamp:
+  Exclude:
+    - "db/migrate/20230614140700_add_index_to_users.rb"
+```
+
+Or silence it from the first line with a directive, which `NEETzsche/NoComments` allows:
+
+```ruby
+# rubocop:disable NEETzsche/GeneratedMigrationTimestamp
+class AddIndexToUsers < ActiveRecord::Migration[8.0]
+```
+
+Projects that set `config.active_record.timestamped_migrations = false` number their migrations `001`, `002`, and so on. Every one of those trips the cop, so disable it there.
+
+There is no autocorrect. The fix is to delete the file and run `bin/rails generate migration` again.
 
 ## NEETzsche/NoComments
 
