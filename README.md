@@ -1,5 +1,7 @@
 # OfficerNEETzsche
 
+[![Gem Version](https://badge.fury.io/rb/officer_neetzsche.svg)](https://rubygems.org/gems/officer_neetzsche)
+
 RuboCop cops that enforce NEETzsche-isms. Every cop ships enabled: register the plugin and the rules apply.
 
 ## Cops
@@ -23,15 +25,13 @@ group :development, :test do
 end
 ```
 
-Until the gem is published to RubyGems, point Bundler at the repository instead:
+Then run `bundle install`. Or install it directly:
 
-```ruby
-group :development, :test do
-  gem "officer_neetzsche", github: "TheStranjer/OfficerNEETzsche", require: false
-end
+```sh
+gem install officer_neetzsche
 ```
 
-Then run `bundle install`.
+The gem is published at [rubygems.org/gems/officer_neetzsche](https://rubygems.org/gems/officer_neetzsche).
 
 ## Usage
 
