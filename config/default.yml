@@ -9,6 +9,11 @@ NEETzsche/GeneratedMigrationTimestamp:
     - "**/db/migrate/**/*.rb"
     - "**/db/*_migrate/**/*.rb"
 
+NEETzsche/MultilineConditionalBody:
+  Description: "Puts an `if`, `unless`, `elsif`, `else`, `while`, or `until` body that is more than one statement, or one statement over more than one line, in a method of its own."
+  Enabled: true
+  VersionAdded: "0.4.0"
+
 NEETzsche/NoComments:
   Description: "Forbids comments. Magic comments, shebangs, and rubocop directives are allowed."
   Enabled: true

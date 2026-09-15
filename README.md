@@ -9,6 +9,7 @@ RuboCop cops that enforce NEETzsche-isms. Every cop ships enabled: register the 
 | Cop | Enforces | Autocorrect |
 | --- | --- | --- |
 | `NEETzsche/GeneratedMigrationTimestamp` | Migration timestamps come from `bin/rails generate migration`, not a keyboard. | No |
+| `NEETzsche/MultilineConditionalBody` | An `if`, `unless`, `while`, or `until` body of more than one statement, or more than one line, is a method of its own. | No |
 | `NEETzsche/NoComments` | No comments. The code explains itself. | Yes |
 | `NEETzsche/StatementModifier` | An `if`, `unless`, `while`, `until`, or `rescue` around one statement is a modifier. | Yes |
 
@@ -108,6 +109,67 @@ Projects that set `config.active_record.timestamped_migrations = false` number t
 
 There is no autocorrect. The fix is to delete the file and run `bin/rails generate migration` again.
 
+## NEETzsche/MultilineConditionalBody
+
+Flags an `if`, `unless`, `elsif`, `else`, `while`, or `until` whose body is more than one statement, or one statement that spans lines. The fix is to name what the body does and move it into a method of its own, after which `NEETzsche/StatementModifier` rewrites the call site as a modifier. Between them, the two cops leave a conditional two shapes: a modifier, or a block whose branches are one statement each.
+
+```ruby
+# bad
+if condition?
+  do_this
+  do_that
+end
+
+while queue.any?
+  item = queue.pop
+  item.call
+end
+
+if condition?
+  items.each do |item|
+    item.call
+  end
+end
+
+# good
+do_stuff if condition?
+work_one_item while queue.any?
+call_items if condition?
+
+def do_stuff
+  do_this
+  do_that
+end
+
+def work_one_item
+  item = queue.pop
+  item.call
+end
+
+def call_items
+  items.each { |item| item.call }
+end
+
+# good, because each branch is one statement
+if condition?
+  do_this
+else
+  do_that
+end
+```
+
+The offense sits on the keyword of the branch: `if`, `unless`, `elsif`, `else`, `while`, or `until`. Each branch is judged on its own, so an `if` with a two-statement body and a one-statement `else` gets one offense, on the `if`. A heredoc counts as the lines it spans. A modifier whose body spans lines, such as `begin ... end if condition?`, is flagged too. A conditional nested inside another is flagged at every level whose body spans lines, and fixing the innermost usually clears the rest.
+
+Left alone:
+
+- A body of one statement on one line, which is `NEETzsche/StatementModifier`'s to rewrite.
+- Ternaries, empty bodies, and `begin ... end while` loops.
+- A condition that spans lines. Only the body is measured.
+
+There is no autocorrect. The method needs a name that says what the body does, and that is a decision for a person. Moving the body by hand also means deciding what it reads and writes: a local variable the body uses becomes a parameter, one it assigns for later use becomes the return value, and a `return`, `break`, or `next` inside it means something else once it sits in another method. Once the body is one call, `NEETzsche/StatementModifier` turns the block into a modifier under `rubocop --autocorrect`.
+
+`Style/GuardClause` and `Style/Next` may flag the same block with a different fix. Either fix satisfies this cop too, since a guard clause or a `next` leaves no block behind. Under `rubocop --autocorrect`, `Layout/LineLength` may wrap the arguments of a long modifier line and `Style/MultilineIfModifier` then restore the block form, which this cop flags. The way out is a method.
+
 ## NEETzsche/NoComments
 
 Flags every comment. On autocorrect, a comment on its own line is deleted along with the line, and a trailing comment is deleted along with the whitespace before it.
@@ -168,7 +230,7 @@ def call
   fetch rescue fallback
 end
 
-# good, because the body is more than one statement
+# left to NEETzsche/MultilineConditionalBody, because the body is more than one statement
 if condition?
   do_this
   do_that
@@ -179,7 +241,7 @@ The offense sits on the keyword. A `rescue` counts when it is the only clause, r
 
 Left alone, because the block form is the only correct one:
 
-- A body of more than one statement, a statement that spans lines, or a condition that spans lines.
+- A body of more than one statement, a statement that spans lines, or a condition that spans lines. The first two are for `NEETzsche/MultilineConditionalBody`.
 - `else`, `elsif`, ternaries, and `begin ... end while` loops.
 - A body that is itself an `if`, `unless`, `while`, `until`, `case`, or `rescue`, in either form. No chained modifiers.
 - A `rescue` that names another class, lists several, binds a variable, has several clauses, an `else`, or an empty body or handler.

@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.3.0 (unreleased)
+## 0.4.0 (unreleased)
+
+### Added
+
+- `NEETzsche/MultilineConditionalBody`: flags an `if`, `unless`, `elsif`, `else`, `while`, or `until` whose body is more than one statement, or one statement that spans lines, and asks for the body to be a method of its own. With `NEETzsche/StatementModifier`, that leaves a conditional two shapes: a modifier, or a block whose branches are one statement each. No autocorrect, since the method needs a name.
+
+## 0.3.0 (2026-09-15)
 
 ### Added
 

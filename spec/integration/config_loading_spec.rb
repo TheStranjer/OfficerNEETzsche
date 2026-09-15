@@ -21,6 +21,10 @@ RSpec.describe "Loading officer_neetzsche from .rubocop.yml", :isolated_environm
       expect(config.for_cop("NEETzsche/StatementModifier")["Enabled"]).to be(true)
     end
 
+    it "enables NEETzsche/MultilineConditionalBody" do
+      expect(config.for_cop("NEETzsche/MultilineConditionalBody")["Enabled"]).to be(true)
+    end
+
     it "disables Style/Documentation" do
       expect(config.for_cop("Style/Documentation")["Enabled"]).to be(false)
     end
@@ -47,6 +51,7 @@ RSpec.describe "Loading officer_neetzsche from .rubocop.yml", :isolated_environm
       expect(config.for_cop("NEETzsche/NoComments")["Enabled"]).to be(false)
       expect(config.for_cop("NEETzsche/GeneratedMigrationTimestamp")["Enabled"]).to be(false)
       expect(config.for_cop("NEETzsche/StatementModifier")["Enabled"]).to be(false)
+      expect(config.for_cop("NEETzsche/MultilineConditionalBody")["Enabled"]).to be(false)
     end
   end
 

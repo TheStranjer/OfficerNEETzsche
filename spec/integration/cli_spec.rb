@@ -91,6 +91,42 @@ RSpec.describe "rubocop with officer_neetzsche", :isolated_environment, :restore
     end
   end
 
+  context "with multi-line bodies" do
+    before do
+      File.write("bodies.rb", <<~RUBY)
+        # frozen_string_literal: true
+
+        if condition?
+          do_this
+          do_that
+        end
+      RUBY
+    end
+
+    it "shows NEETzsche/MultilineConditionalBody as enabled" do
+      expect(cli.run(%w[--show-cops NEETzsche/MultilineConditionalBody])).to eq(0)
+      expect($stdout.string).to include("NEETzsche/MultilineConditionalBody:").and include("Enabled: true")
+    end
+
+    it "reports NEETzsche/MultilineConditionalBody offenses" do
+      expect(cli.run(%w[--format simple --only NEETzsche/MultilineConditionalBody bodies.rb])).to eq(1)
+      expect($stdout.string)
+        .to include("NEETzsche/MultilineConditionalBody: Move a multi-line if body into its own method.")
+    end
+
+    it "leaves them for a person to fix" do
+      expect(cli.run(%w[--format simple --only NEETzsche/MultilineConditionalBody --autocorrect bodies.rb])).to eq(1)
+      expect(File.read("bodies.rb")).to eq(<<~RUBY)
+        # frozen_string_literal: true
+
+        if condition?
+          do_this
+          do_that
+        end
+      RUBY
+    end
+  end
+
   context "with migrations" do
     before do
       write_migration("db/migrate/20260409070000_create_users.rb", "CreateUsers")
