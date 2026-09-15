@@ -14,5 +14,19 @@ NEETzsche/NoComments:
   Enabled: true
   VersionAdded: "0.1.0"
 
+NEETzsche/StatementModifier:
+  Description: "Writes an `if`, `unless`, `while`, `until`, or `rescue` whose body is one statement as a modifier, whatever the line length."
+  Enabled: true
+  VersionAdded: "0.3.0"
+
 Style/Documentation:
+  Enabled: false
+
+Style/IfUnlessModifier:
+  Enabled: false
+
+Style/RescueModifier:
+  Enabled: false
+
+Style/WhileUntilModifier:
   Enabled: false

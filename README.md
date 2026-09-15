@@ -10,6 +10,7 @@ RuboCop cops that enforce NEETzsche-isms. Every cop ships enabled: register the 
 | --- | --- | --- |
 | `NEETzsche/GeneratedMigrationTimestamp` | Migration timestamps come from `bin/rails generate migration`, not a keyboard. | No |
 | `NEETzsche/NoComments` | No comments. The code explains itself. | Yes |
+| `NEETzsche/StatementModifier` | An `if`, `unless`, `while`, `until`, or `rescue` around one statement is a modifier. | Yes |
 
 ## Requirements
 
@@ -131,6 +132,62 @@ Comments that change how Ruby or RuboCop behaves are allowed:
 - RuboCop directives: anything starting with `# rubocop:`, so `disable`, `enable`, `todo`, `disable-next`, `todo-next`, `push`, and `pop`.
 
 `Style/Documentation` demands the class and module comments this cop forbids, so the plugin disables it. Re-enable it in your own `.rubocop.yml` if you want the two to fight.
+
+## NEETzsche/StatementModifier
+
+Flags an `if`, `unless`, `while`, `until`, or `rescue` whose body is one statement on one line, and rewrites it as a statement modifier. How long the modifier line ends up does not matter.
+
+```ruby
+# bad
+if condition?
+  do_thing
+end
+
+until queue.empty?
+  queue.pop.call
+end
+
+begin
+  fetch
+rescue
+  fallback
+end
+
+def call
+  fetch
+rescue StandardError
+  fallback
+end
+
+# good
+do_thing if condition?
+queue.pop.call until queue.empty?
+fetch rescue fallback
+
+def call
+  fetch rescue fallback
+end
+
+# good, because the body is more than one statement
+if condition?
+  do_this
+  do_that
+end
+```
+
+The offense sits on the keyword. A `rescue` counts when it is the only clause, rescues `StandardError` (bare, or named, since that is what the modifier rescues), binds no variable, and has no `else`; the `begin`/`end` around it goes away, while a `def`, a block, or an `ensure` around it stays. Parentheses are added where the value is used, so `value = if condition? then compute end` becomes `value = (compute if condition?)` and `call(begin; fetch; rescue; fallback; end)` becomes `call((fetch rescue fallback))`. An assigned `rescue` needs none: `value = fetch rescue fallback` already binds that way.
+
+Left alone, because the block form is the only correct one:
+
+- A body of more than one statement, a statement that spans lines, or a condition that spans lines.
+- `else`, `elsif`, ternaries, and `begin ... end while` loops.
+- A body that is itself an `if`, `unless`, `while`, `until`, `case`, or `rescue`, in either form. No chained modifiers.
+- A `rescue` that names another class, lists several, binds a variable, has several clauses, an `else`, or an empty body or handler.
+- A comment on any line of the block other than the first. A comment on the keyword line moves to the end of the modifier line.
+- A heredoc anywhere inside.
+- Anything whose meaning changes when the body is parsed before the condition, which is what the modifier form does: a condition that assigns a local variable, matches a pattern, or captures a named group; a body that assigns a name the condition calls as a method, as in `if name.nil?` followed by `name = default`; and an endless method definition, which would swallow the modifier.
+
+The plugin disables `Style/IfUnlessModifier` and `Style/WhileUntilModifier`, which this cop subsumes, and `Style/RescueModifier`, which forbids what this cop demands. Re-enable them in your own `.rubocop.yml` if you want them back; `Style/IfUnlessModifier` will then fight over any modifier line longer than `Layout/LineLength` allows. `Layout/LineLength` itself is not consulted. If a modifier line is too long for it, shorten the statement or the condition, or exclude the file. Under `rubocop --autocorrect`, `Layout/LineLength` may instead wrap the arguments of a call on that line, after which `Style/MultilineIfModifier` restores the block form around the now multi-line body, and this cop leaves it there. `Style/GuardClause` and `Style/SoleNestedConditional` may flag the same block with a different fix; whichever corrects first wins, and the result satisfies both.
 
 ## Configuration
 

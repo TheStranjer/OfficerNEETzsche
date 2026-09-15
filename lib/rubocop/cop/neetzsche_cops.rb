@@ -2,3 +2,4 @@
 
 require_relative "neetzsche/generated_migration_timestamp"
 require_relative "neetzsche/no_comments"
+require_relative "neetzsche/statement_modifier"

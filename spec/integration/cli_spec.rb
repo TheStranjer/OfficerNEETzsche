@@ -38,6 +38,59 @@ RSpec.describe "rubocop with officer_neetzsche", :isolated_environment, :restore
     expect(File.read("example.rb")).to eq("# frozen_string_literal: true\n\ndef foo; end\n")
   end
 
+  context "with one-statement blocks" do
+    before do
+      File.write("blocks.rb", <<~RUBY)
+        # frozen_string_literal: true
+
+        if condition?
+          do_thing
+        end
+
+        begin
+          fetch
+        rescue StandardError
+          fallback
+        end
+      RUBY
+      File.write("long.rb", <<~RUBY)
+        # frozen_string_literal: true
+
+        if some_object.some_predicate_with_a_long_name.another_predicate_with_a_long_name.yet_another_predicate?
+          first_object.second_method_with_a_long_name.third_method_with_a_long_name.fourth_method_with_a_long_name
+        end
+      RUBY
+    end
+
+    it "shows NEETzsche/StatementModifier as enabled" do
+      expect(cli.run(%w[--show-cops NEETzsche/StatementModifier])).to eq(0)
+      expect($stdout.string).to include("NEETzsche/StatementModifier:").and include("Enabled: true")
+    end
+
+    it "reports NEETzsche/StatementModifier offenses" do
+      expect(cli.run(%w[--format simple --only NEETzsche/StatementModifier blocks.rb])).to eq(1)
+      expect($stdout.string).to include("NEETzsche/StatementModifier: Write a one-statement if as a modifier.")
+        .and include("NEETzsche/StatementModifier: Write a one-statement rescue as a modifier.")
+    end
+
+    it "autocorrects them" do
+      expect(cli.run(%w[--format simple --only NEETzsche/StatementModifier --autocorrect blocks.rb])).to eq(0)
+      expect(File.read("blocks.rb"))
+        .to eq("# frozen_string_literal: true\n\ndo_thing if condition?\n\nfetch rescue fallback\n")
+    end
+
+    it "writes a long modifier line alongside the default cops and leaves its length to Layout/LineLength" do
+      expect(cli.run(%w[--format simple --autocorrect long.rb])).to eq(1)
+      expect($stdout.string).to include("[Corrected] NEETzsche/StatementModifier")
+        .and include("Layout/LineLength: Line is too long. [209/120]")
+      expect(File.read("long.rb")).to eq(<<~RUBY)
+        # frozen_string_literal: true
+
+        first_object.second_method_with_a_long_name.third_method_with_a_long_name.fourth_method_with_a_long_name if some_object.some_predicate_with_a_long_name.another_predicate_with_a_long_name.yet_another_predicate?
+      RUBY
+    end
+  end
+
   context "with migrations" do
     before do
       write_migration("db/migrate/20260409070000_create_users.rb", "CreateUsers")

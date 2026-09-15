@@ -17,8 +17,18 @@ RSpec.describe "Loading officer_neetzsche from .rubocop.yml", :isolated_environm
         .to include("Enabled" => true, "Include" => ["**/db/migrate/**/*.rb", "**/db/*_migrate/**/*.rb"])
     end
 
+    it "enables NEETzsche/StatementModifier" do
+      expect(config.for_cop("NEETzsche/StatementModifier")["Enabled"]).to be(true)
+    end
+
     it "disables Style/Documentation" do
       expect(config.for_cop("Style/Documentation")["Enabled"]).to be(false)
+    end
+
+    it "disables the built-in modifier cops that NEETzsche/StatementModifier subsumes or contradicts" do
+      %w[Style/IfUnlessModifier Style/WhileUntilModifier Style/RescueModifier].each do |cop_name|
+        expect(config.for_cop(cop_name)["Enabled"]).to be(false), "#{cop_name} must be disabled"
+      end
     end
   end
 
@@ -36,6 +46,7 @@ RSpec.describe "Loading officer_neetzsche from .rubocop.yml", :isolated_environm
     it "disables every NEETzsche cop" do
       expect(config.for_cop("NEETzsche/NoComments")["Enabled"]).to be(false)
       expect(config.for_cop("NEETzsche/GeneratedMigrationTimestamp")["Enabled"]).to be(false)
+      expect(config.for_cop("NEETzsche/StatementModifier")["Enabled"]).to be(false)
     end
   end
 
